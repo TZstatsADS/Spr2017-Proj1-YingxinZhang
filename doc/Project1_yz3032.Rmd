@@ -69,8 +69,8 @@ library("LDAvis")
 
 
 
-source("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/lib/plotstacked.R")
-source("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/lib/speechFuncs.R")
+source("../lib/plotstacked.R")
+source("../lib/speechFuncs.R")
 
 
 
@@ -84,13 +84,13 @@ print(R.version)
 
 #Step 1: Set folder path and load dataset.
 ```{r}
-folder.path="/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/fulltext/"
+folder.path="../data/fulltext/"
 speeches=list.files(path = folder.path, pattern = "*.txt")
 prex.out=substr(speeches, 6, nchar(speeches)-4)
 
 ff.all<-Corpus(DirSource(folder.path, encoding="UTF-8"))
 
-speech.list <- read.csv("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/speech.list.csv",header = T,as.is = T)
+speech.list <- read.csv("../data/speech.list.csv",header = T,as.is = T)
 
 ```
 
@@ -245,7 +245,7 @@ Then we are interested in what are the most popular words among all these speech
 
 
 ```{r}
-cname <- file.path("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/fulltext.sel")   
+cname <- file.path("../data/fulltext.sel")   
 
 docs <- Corpus(DirSource(cname))   
 
@@ -327,7 +327,7 @@ rect.hclust(fit, k=5, border="red") # draw dendogram with red borders around the
 Now we use LDA to explore the terms of each topic and the relationship between topics.
 
 ```{r}
-speech.list <- read.csv("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/speech.list.csv",header = T,as.is = T)
+speech.list <- read.csv("../data/speech.list.csv",header = T,as.is = T)
 
 speeches <- speech.list$fulltext
 
@@ -366,9 +366,9 @@ documents <- lapply(doc.list, get.terms)
 ```{r}
 D <- length(documents)  # number of documents (2,000)
 W <- length(vocab)  # number of terms in the vocab (14,568)
-doc.length <- sapply(documents, function(x) sum(x[2, ]))  # number of tokens per document [312, 288, 170, 436, 291, /Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang.]
+doc.length <- sapply(documents, function(x) sum(x[2, ]))  # number of tokens per document [312, 288, 170, 436, 291, ...]
 N <- sum(doc.length)  # total number of tokens in the data (546,827)
-term.frequency <- as.integer(term.table)  # frequencies of terms in the corpus [8939, 5544, 2411, 2410, 2143, /Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang.]
+term.frequency <- as.integer(term.table)  # frequencies of terms in the corpus [8939, 5544, 2411, 2410, 2143, ...]
 
 ```
 
@@ -419,15 +419,14 @@ The interactive visualization is in the form of an url instead of appearing in t
 ```
 
 Here are the screenshots of the dynamic intervative visualization results. We choose the first three topics and inspect the terms they contain.
-![topic 1](/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/figs/topic 1.png)
+![topic 1](../figs/topic 1.png)
 The first topic mainly includes "people", "government", "nation", etc. These words reflects the concentration of responsibility of government.
 
-![topic 2](/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/figs/topic 2.png)
+![topic 2](../figs/topic 2.png)
 The second topic concentrates on "america", which shows the promote patriotism and foster a sense of nationhood.
 
-![topic 3](/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/figs/topic 3.png)
+![topic 3](../figs/topic 3.png)
 The third topic mainly emphasizes the America spirit, i.e. freedom and the persue of peace, which is satire because these presidents initiated wars. 
-
 
 
 
