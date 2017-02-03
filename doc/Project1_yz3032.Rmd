@@ -25,6 +25,7 @@ We choose two presidents from 19th century, i.e., James K. Polk who commanded Me
 
 # Step 0: check and install needed packages. Load the libraries and functions. 
 ```{r, message=FALSE, warning=FALSE}
+
 packages.used=c("rvest", "tibble", "qdap", 
                 "sentimentr", "gplots", "dplyr",
                 "tm", "syuzhet", "factoextra", 
@@ -66,8 +67,10 @@ library("igraph")
 library("fpc")
 library("LDAvis")
 
-source("../lib/plotstacked.R")
-source("../lib/speechFuncs.R")
+
+
+source("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/lib/plotstacked.R")
+source("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/lib/speechFuncs.R")
 
 
 
@@ -81,13 +84,13 @@ print(R.version)
 
 #Step 1: Set folder path and load dataset.
 ```{r}
-folder.path="../data/fulltext/"
+folder.path="/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/fulltext/"
 speeches=list.files(path = folder.path, pattern = "*.txt")
 prex.out=substr(speeches, 6, nchar(speeches)-4)
 
 ff.all<-Corpus(DirSource(folder.path, encoding="UTF-8"))
 
-speech.list <- read.csv("../data/speech.list.csv",header = T,as.is = T)
+speech.list <- read.csv("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/speech.list.csv",header = T,as.is = T)
 
 ```
 
@@ -177,7 +180,7 @@ In Abraham Lincoln s first speech, he mentioned clause, secede, surrendered, uni
 
 The significance of the American Civil War is the abolition of slavery. The United States have implemented a capitalist policy, and maintained the unity of the country, thus speeding up the development of the country. The black people in the United States gained relatively free in the United States. 
 
-#Step 3
+#Step 3 Analysis of number of word in a sentence
 We zoom in the number of words in a sentence of each president's speech. As time goes on, the sentence is becoming shorter. This indicates the improvement of the team that facilitates the president, with more consise words and more concentrated ideology.
 
 ```{r, message=FALSE, warning=FALSE}
@@ -242,7 +245,7 @@ Then we are interested in what are the most popular words among all these speech
 
 
 ```{r}
-cname <- file.path("../data/fulltext.sel")   
+cname <- file.path("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/fulltext.sel")   
 
 docs <- Corpus(DirSource(cname))   
 
@@ -324,7 +327,7 @@ rect.hclust(fit, k=5, border="red") # draw dendogram with red borders around the
 Now we use LDA to explore the terms of each topic and the relationship between topics.
 
 ```{r}
-speech.list <- read.csv("../data/speech.list.csv",header = T,as.is = T)
+speech.list <- read.csv("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/speech.list.csv",header = T,as.is = T)
 
 speeches <- speech.list$fulltext
 
@@ -363,9 +366,9 @@ documents <- lapply(doc.list, get.terms)
 ```{r}
 D <- length(documents)  # number of documents (2,000)
 W <- length(vocab)  # number of terms in the vocab (14,568)
-doc.length <- sapply(documents, function(x) sum(x[2, ]))  # number of tokens per document [312, 288, 170, 436, 291, ...]
+doc.length <- sapply(documents, function(x) sum(x[2, ]))  # number of tokens per document [312, 288, 170, 436, 291, /Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang.]
 N <- sum(doc.length)  # total number of tokens in the data (546,827)
-term.frequency <- as.integer(term.table)  # frequencies of terms in the corpus [8939, 5544, 2411, 2410, 2143, ...]
+term.frequency <- as.integer(term.table)  # frequencies of terms in the corpus [8939, 5544, 2411, 2410, 2143, /Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang.]
 
 ```
 
