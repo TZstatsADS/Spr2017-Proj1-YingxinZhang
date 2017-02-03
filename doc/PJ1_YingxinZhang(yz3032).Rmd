@@ -1,0 +1,433 @@
+---
+title: "An R notebook story about US presidents' inaugural speeches"
+runtime : shiny
+output: 
+  html_document: default
+  html_notebook: default
+---
+
+The inauguration speech of an American president is always a reflection of the president's advocacy and his intended policies during his tenure. By using natural language process techniques, we can transform these perceptual expressions into quantified results and try to capture some common characteristics as well as unique aspects of these speeches.
+
+Since the foundation of the United States in 1776, the US has initiated or participated several wars during the 240 years. Some wars that had a long span witnessed the transition of power from one president to another, while some wars started right after a new president took office and ended during his tenure. We are interested in those presidents who launched the war or were involved in it. Analyzing their inaugural speeches, we intend to find if the words that he emphasized can indicate his attitude towards wars and what characteristics these presidents have in common.
+
+We choose two presidents from 19th century, i.e., James K. Polk who commanded Mexico and American War and Abraham Lincoln, who initiated Civil War. Two from 20th century   Franklin D. Roosevelt, who served consecutive terms during the second world war and Harry S. Truman, who initiated the Korean War.  For 21st century, we choose to analyze George W. Bush, a president who launched two very long-term wars  Iraq War and War in Afghanistan.
+
+
+![James K. Polk (Presidency:1845-1849)](https://www.loc.gov/rr/program/bib/presidents/polk/images/bibliography.jpg)
+
+![Abraham Lincoln (Presidency:1861-1865)](https://www.minnpost.com/sites/default/files/AbrahamLincoln250.jpg)
+
+![Franklin D. Roosevelt (Presidency: 1933-1945)](http://www.presidentprofiles.com/images/prh_01_img0065.jpg)
+
+![Harry S. Truman (Presidency: 1945-1953) ](https://www.loc.gov/rr/program/bib/presidents/truman/images/bibliography.jpg)
+
+![George W. Bush Presidency : 2001-2009](http://americanhistory.si.edu/presidency/timeline/pres_era/images/pres/pres_medium/bush_43_M.jpg)
+
+# Step 0: check and install needed packages. Load the libraries and functions. 
+```{r, message=FALSE, warning=FALSE}
+packages.used=c("rvest", "tibble", "qdap", 
+                "sentimentr", "gplots", "dplyr",
+                "tm", "syuzhet", "factoextra", 
+                "beeswarm", "scales", "RColorBrewer",
+                "RANN", "tm", "topicmodels")
+
+# check packages that need to be installed.
+packages.needed=setdiff(packages.used, 
+                        intersect(installed.packages()[,1], 
+                                  packages.used))
+# install additional packages
+if(length(packages.needed)>0){
+  install.packages(packages.needed, dependencies = TRUE)
+}
+
+# load packages
+library("rvest")
+library("tibble")
+library("qdap")
+library("sentimentr")
+library("gplots")
+library("dplyr")
+library("tm")
+library("syuzhet")
+library("factoextra")
+library("beeswarm")
+library("scales")
+library("RColorBrewer")
+library("RANN")
+library("topicmodels")
+library("tidytext")
+library("wordcloud")
+library("rsconnect")
+library("SnowballC")
+library("ggplot2")
+library("biclust")
+library("cluster")
+library("igraph")
+library("fpc")
+library("LDAvis")
+
+source("../lib/plotstacked.R")
+source("../lib/speechFuncs.R")
+
+
+
+```
+
+This notebook was prepared with the following environmental settings.
+
+```{r}
+print(R.version)
+```
+
+#Step 1: Set folder path and load dataset.
+```{r}
+folder.path="../data/fulltext/"
+speeches=list.files(path = folder.path, pattern = "*.txt")
+prex.out=substr(speeches, 6, nchar(speeches)-4)
+
+ff.all<-Corpus(DirSource(folder.path, encoding="UTF-8"))
+
+speech.list <- read.csv("../data/speech.list.csv",header = T,as.is = T)
+
+```
+
+#Step 2: Use wordcloud to visualize terms.
+
+We use the wordcloud package and shinny app to display the visualization of word frequency of different presidents  speeches. Something interesting appeared.
+
+```{r}
+ff.all<-tm_map(ff.all, stripWhitespace)
+ff.all<-tm_map(ff.all, content_transformer(tolower))
+ff.all<-tm_map(ff.all, removeWords, stopwords("english"))
+ff.all<-tm_map(ff.all, removeWords, character(0))
+ff.all<-tm_map(ff.all, removePunctuation)
+
+tdm.all<-TermDocumentMatrix(ff.all)
+
+tdm.tidy=tidy(tdm.all)
+
+tdm.overall=summarise(group_by(tdm.tidy, term), sum(count))
+```
+
+```{r}
+dtm <- DocumentTermMatrix(ff.all,
+                          control = list(weighting = function(x)
+                                             weightTfIdf(x, 
+                                                         normalize =FALSE),
+                                         stopwords = TRUE))
+ff.dtm=tidy(dtm)
+``` 
+
+```{r, warning=FALSE}
+library(shiny)
+speeches.sel <- speeches[c(1,2,12:15,18:19,24,28)]
+shinyApp(
+    ui = fluidPage(
+      titlePanel("The WorldCloud of Inaugural Speeches"),
+      fluidRow(style = "padding-bottom: 20px;",
+        column(8, selectInput('speech', 'Speech',
+                              speeches.sel,
+                              selected=speeches.sel[10])),
+        column(4, sliderInput('nwords', 'Number of words', 3,
+                               min = 20, max = 200, value=100, step = 20))
+      ),
+      fluidRow(
+        plotOutput('wordclouds', height = "400px")
+      )
+    ),
+
+    server = function(input, output, session) {
+
+      # Combine the selected variables into a new data frame
+      selectedData <- reactive({
+        list(dtm.term1=ff.dtm$term[ff.dtm$document==as.character(input$speech)],
+             dtm.count1=ff.dtm$count[ff.dtm$document==as.character(input$speech)]
+             )
+      })
+
+      output$wordclouds <- renderPlot(height = 400, {
+        par(mfrow=c(1,2), mar = c(0, 0, 3, 0))
+        wordcloud(selectedData()$dtm.term1, 
+                  selectedData()$dtm.count1,
+              scale=c(4,0.5),
+              max.words=input$nwords,
+              min.freq=1,
+              random.order=FALSE,
+              rot.per=0,
+              use.r.layout=FALSE,
+              random.color=FALSE,
+              colors=brewer.pal(10,"Reds"), 
+            main=input$speech)
+      })
+    },
+
+    options = list(height = 600)
+)
+```
+
+James K. Polk made his inaugural speech on March 4, 1845. In his speech, the word texas stands out with an overwhelming frequency.  This is consistent with the fact that Polk was the supporter of Democrats' Destiny Expansion Theory, which declared that "the fate of our right to fate, is to extend to the entire continent.". In 1846, the Mexican-American War started.
+
+The outbreak of the Mexican-American war was caused by unresolved border problems between Mexico and the Republic of Texas, and by American expansionism. On April 24, 1846, the war broke out. The Mexican cavalry attacked and captured a United States force near the Rio Grande. On May 13, 1846, Congress declared war on Mexico. In January 1848, the two sides began peace talks. On February 2 the two sides signed a peace treaty with Mexico ceding Texas, New Mexico, and California. On June 12, 1848, the US military withdraw the army from Mexico City, and the war ended.
+
+Also in Polk's speech, he strengthened the words reunion, union, compromise, etc. These words reflect his determination and confidence to solve the conflict about texas with Mexico.
+
+![the position of texas](http://www.freeworldmaps.net/download/maps/united-states/united-states-map.jpg)
+
+In Abraham Lincoln s first speech, he mentioned clause, secede, surrendered, union, slaves, etc. He conveyed an ideology to support nationalism, commerce, and persist in preventing the expansion of human slavery. In 1861, the American Civil War broke out.
+
+The significance of the American Civil War is the abolition of slavery. The United States have implemented a capitalist policy, and maintained the unity of the country, thus speeding up the development of the country. The black people in the United States gained relatively free in the United States. 
+
+#Step 3
+We zoom in the number of words in a sentence of each president's speech. As time goes on, the sentence is becoming shorter. This indicates the improvement of the team that facilitates the president, with more consise words and more concentrated ideology.
+
+```{r, message=FALSE, warning=FALSE}
+sentence.list=NULL
+for(i in 1:nrow(speech.list)){
+  sentences=sent_detect(speech.list$fulltext[i],
+                        endmarks = c("?", ".", "!", "|",";"))
+  if(length(sentences)>0){
+    emotions=get_nrc_sentiment(sentences)
+    word.count=word_count(sentences)
+    # colnames(emotions)=paste0("emo.", colnames(emotions))
+    # in case the word counts are zeros?
+    emotions=diag(1/(word.count+0.01))%*%as.matrix(emotions)
+    sentence.list=rbind(sentence.list, 
+                        cbind(speech.list[i,-ncol(speech.list)],
+                              sentences=as.character(sentences), 
+                              word.count,
+                              emotions,
+                              sent.id=1:length(sentences)
+                              )
+    )
+  }
+}
+```
+
+```{r}
+sentence.list=
+  sentence.list%>%
+  filter(!is.na(word.count)) 
+```
+
+```{r}
+sel.comparison=c( "JamesKPolk","AbrahamLincoln","FranklinDRoosevelt", "HarrySTruman", "GeorgeWBush")
+```
+
+```{r}
+sentence.list.sel=filter(sentence.list, 
+                        type=="inaug",  File%in%sel.comparison)
+sentence.list.sel$File=factor(sentence.list.sel$File)
+
+sentence.list.sel$FileOrdered=reorder(sentence.list.sel$File,
+                                  sentence.list.sel$word.count,
+                                  mean,
+                                  order=T)
+par(mar=c(4, 11, 2, 2))
+
+beeswarm(word.count~FileOrdered,
+         data=sentence.list.sel,
+         horizontal = TRUE,
+         pch=16, col=alpha(brewer.pal(9, "Set1"), 0.6),
+         cex=0.55, cex.axis=0.8, cex.lab=0.8,
+         spacing=5/nlevels(sentence.list.sel$FileOrdered),
+         las=2, ylab="", xlab="Number of words in a sentence.",
+         main="Inaugural Speeches")
+```
+
+
+
+#Step 4: Extract the most frequently used words and word clustering.
+Then we are interested in what are the most popular words among all these speeches. By calculating the word frequency, we select the words that appeared more than 20 times. The most commonly mentioned word is "government", followed by "people", "states", and "union". Visualizing these words frequency in histogram and wordcloud, we get the following results. 
+
+
+
+```{r}
+cname <- file.path("../data/fulltext.sel")   
+
+docs <- Corpus(DirSource(cname))   
+
+# summary(docs)   
+# inspect(docs[2])
+docs <- tm_map(docs, removePunctuation) 
+
+for(j in seq(docs))   
+{   
+  docs[[j]] <- gsub("/", " ", docs[[j]])   
+  docs[[j]] <- gsub("@", " ", docs[[j]])   
+  docs[[j]] <- gsub("\\|", " ", docs[[j]])   
+}  
+
+docs <- tm_map(docs, removeNumbers)  
+docs <- tm_map(docs, tolower)
+docs <- tm_map(docs, removeWords, stopwords("english")) 
+ docs <- tm_map(docs, removeWords, c("can", "must", "may", "could","shall","will","and"))
+
+
+docs <- tm_map(docs, stemDocument)   
+docs <- tm_map(docs, stripWhitespace)   
+docs <- tm_map(docs, PlainTextDocument)  
+
+dtm <- DocumentTermMatrix(docs)   
+tdm <- TermDocumentMatrix(docs)   
+
+freq <- colSums(as.matrix(dtm))   
+#length(freq)   
+
+ord <- order(freq) 
+
+#  Start by removing sparse terms:   
+dtms <- removeSparseTerms(dtm, 0.1) # This makes a matrix that is 10% empty space, maximum.   
+#inspect(dtms)  
+
+freq <- colSums(as.matrix(dtms))   
+freq <- sort(colSums(as.matrix(dtm)), decreasing=TRUE)   
+
+findFreqTerms(dtm, lowfreq=20)   
+
+wf <- data.frame(word=names(freq), freq=freq)
+
+p <- ggplot(subset(wf, freq>20), aes(word, freq))
+p <- p + geom_bar(stat="identity")
+p <- p + theme(axis.text.x=element_text(angle=45, hjust=1))
+p
+```
+
+```{r,warning=F}
+wordcloud(names(freq), freq,
+          scale=c(5,0.5),
+          min.freq=25,
+          max.words=100,
+          random.order=FALSE,
+          rot.per=0,
+          use.r.layout=T,
+          random.color=FALSE,
+          colors=brewer.pal(9,"Reds"))  
+```
+
+Clustering these words, we can detect the correlation between words and find those that appeared together.
+
+```{r}
+dtmss <- removeSparseTerms(dtm, 0.15) # This makes a matrix that is only 15% empty space, maximum.   
+d <- dist(t(dtmss), method="euclidian")   
+fit <- hclust(d=d, method="ward")   
+plot(fit, hang=-1,main = "dendrogram of terms")
+plot(fit, hang=-1)
+groups <- cutree(fit, k=5)   # "k=" defines the number of clusters you are using   
+rect.hclust(fit, k=5, border="red") # draw dendogram with red borders around the 5 clusters   
+
+
+```
+
+
+#Step 5 Topic Modeling
+
+Now we use LDA to explore the terms of each topic and the relationship between topics.
+
+```{r}
+speech.list <- read.csv("../data/speech.list.csv",header = T,as.is = T)
+
+speeches <- speech.list$fulltext
+
+stop_words <- stopwords("SMART")
+# pre-processing:
+speeches <- gsub("'", "", speeches)  # remove apostrophes
+speeches <- gsub("[[:punct:]]", " ", speeches)  # replace punctuation with space
+speeches <- gsub("[[:cntrl:]]", " ", speeches)  # replace control characters with space
+
+speeches <- gsub("^[[:space:]]+", "", speeches) # remove whitespace at beginning of documents
+speeches <- gsub("[[:space:]]+$", "", speeches) # remove whitespace at end of documents
+speeches <- tolower(speeches)  # force to lowercase
+
+# tokenize on space and output as a list:
+doc.list <- strsplit(speeches, "[[:space:]]+")
+
+# compute the table of terms:
+term.table <- table(unlist(doc.list))
+term.table <- sort(term.table, decreasing = TRUE)
+
+# remove terms that are stop words or occur fewer than 5 times:
+del <- names(term.table) %in% stop_words | term.table < 2
+term.table <- term.table[!del]
+vocab <- names(term.table)
+
+# now put the documents into the format required by the lda package:
+get.terms <- function(x) {
+  index <- match(x, vocab)
+  index <- index[!is.na(index)]
+  rbind(as.integer(index - 1), as.integer(rep(1, length(index))))
+}
+documents <- lapply(doc.list, get.terms)
+```
+
+
+```{r}
+D <- length(documents)  # number of documents (2,000)
+W <- length(vocab)  # number of terms in the vocab (14,568)
+doc.length <- sapply(documents, function(x) sum(x[2, ]))  # number of tokens per document [312, 288, 170, 436, 291, ...]
+N <- sum(doc.length)  # total number of tokens in the data (546,827)
+term.frequency <- as.integer(term.table)  # frequencies of terms in the corpus [8939, 5544, 2411, 2410, 2143, ...]
+
+```
+
+```{r}
+K <- 20
+G <- 5000
+alpha <- 0.02
+eta <- 0.02
+
+# Fit the model:
+library(lda)
+set.seed(357)
+t1 <- Sys.time()
+fit <- lda.collapsed.gibbs.sampler(documents = documents, K = K, vocab = vocab,
+                                   num.iterations = G, alpha = alpha,
+                                   eta = eta, initial = NULL, burnin = 0,
+                                   compute.log.likelihood = TRUE)
+t2 <- Sys.time()
+t2 - t1  # about 8 minutes on laptop
+```
+
+
+```{r}
+theta <- t(apply(fit$document_sums + alpha, 2, function(x) x/sum(x)))
+phi <- t(apply(t(fit$topics) + eta, 2, function(x) x/sum(x)))
+
+MovieReviews <- list(phi = phi,
+                     theta = theta,
+                     doc.length = doc.length,
+                     vocab = vocab,
+                     term.frequency = term.frequency)
+```
+
+
+The interactive visualization is in the form of an url instead of appearing in the R notebook document. To run this code and see the dynamic result, remove the "#" symbol in the following chunks. 
+```{r}
+
+# create the JSON object to feed the visualization:
+# json <- createJSON(phi = MovieReviews$phi,
+#                    theta = MovieReviews$theta,
+#                    doc.length = MovieReviews$doc.length,
+#                    vocab = MovieReviews$vocab,
+#                    term.frequency = MovieReviews$term.frequency)
+```
+
+```{r}
+#serVis(json, out.dir = 'vis', open.browser =T)
+```
+
+Here are the screenshots of the dynamic intervative visualization results. We choose the first three topics and inspect the terms they contain.
+![topic 1](/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/figs/topic 1.png)
+The first topic mainly includes "people", "government", "nation", etc. These words reflects the concentration of responsibility of government.
+
+![topic 2](/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/figs/topic 2.png)
+The second topic concentrates on "america", which shows the promote patriotism and foster a sense of nationhood.
+
+![topic 3](/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/figs/topic 3.png)
+The third topic mainly emphasizes the America spirit, i.e. freedom and the persue of peace, which is satire because these presidents initiated wars. 
+
+
+
+
+
+
+
