@@ -4,7 +4,7 @@ library(RColorBrewer)
 library(dplyr)
 library(tidytext)
 
-folder.path="../data/InauguralSpeeches/"
+folder.path="/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/data/InauguralSpeeches/"
 speeches=list.files(path = folder.path, pattern = "*.txt")
 prez.out=substr(speeches, 6, nchar(speeches)-4)
 
@@ -16,6 +16,7 @@ ff.all<-tm_map(ff.all, stripWhitespace)
 ff.all<-tm_map(ff.all, content_transformer(tolower))
 ff.all<-tm_map(ff.all, removeWords, stopwords("english"))
 ff.all<-tm_map(ff.all, removeWords, character(0))
+
 ff.all<-tm_map(ff.all, removePunctuation)
 tdm.all<-TermDocumentMatrix(ff.all)
 tdm.tidy=tidy(tdm.all)
@@ -47,7 +48,7 @@ for(i in 1:length(speeches)){
 #  v <- sort(rowSums(m),decreasing=TRUE)
 #  d <- data.frame(word = names(v),freq=v)
   
-  png(paste("../output/", prez.out[i], ".png", sep=""),
+  png(paste("/Users/yingxinzhang/Desktop/GR5243 Applied Data Science/Spr2017-Proj1-YingxinZhang/output1/", prez.out[i], ".png", sep=""),
       width=300, height=300)
   wordcloud(ff.dtm$term[ff.dtm$document==speeches[i]],
             ff.dtm$count[ff.dtm$document==speeches[i]],
@@ -62,4 +63,5 @@ for(i in 1:length(speeches)){
             main=prez.out[i])
   dev.off()
   
-  }
+}
+
